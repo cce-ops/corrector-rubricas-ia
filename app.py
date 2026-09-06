@@ -14,22 +14,34 @@ st.set_page_config(
 )
 
 # 2. Estilos para los títulos (Azul oscuro en claro, Azul celeste en oscuro)
-estilo_titulos = """
+estilos_upc = """
 <style>
-    /* Modo Claro: El mismo azul (#1363A2) de la casilla "Evaluar Trabajo" */
+    /* 1. Títulos en Modo Claro (Azul UPC) */
     h1, h2, h3 {
         color: #1363A2 !important;
     }
 
-    /* Modo Oscuro: Azul claro brillante para que haga buen contraste */
+    /* 2. Títulos en Modo Oscuro (Azul Celeste para contraste) */
     @media (prefers-color-scheme: dark) {
         h1, h2, h3 {
             color: #63B3ED !important;
         }
     }
+
+    /* 3. Colorear el botón de "Evaluar Trabajo" con el Azul UPC */
+    div.stButton > button:first-child {
+        background-color: #1363A2 !important;
+        color: white !important;
+        border: none !important;
+    }
+    
+    /* Efecto al pasar el ratón por encima del botón */
+    div.stButton > button:first-child:hover {
+        background-color: #0e4b7a !important; 
+    }
 </style>
 """
-st.markdown(estilo_titulos, unsafe_allow_html=True)
+st.markdown(estilos_upc, unsafe_allow_html=True)
 st.title("Corrector Automático por Rúbricas")
 st.write("Herramienta de apoyo para la evaluación de proyectos de ingeniería.")
 st.caption("🔒 Aviso de Privacidad: Los documentos subidos son procesados en memoria temporal y se eliminan al finalizar la evaluación. Se recomienda a los alumnos omitir datos personales sensibles.")
