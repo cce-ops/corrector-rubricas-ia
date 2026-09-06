@@ -180,7 +180,7 @@ if st.button("Evaluar Trabajo", type="primary"):
             """
             
 # --- NUEVO: Sistema de Respaldo Automático (Fallback) ---
-            modelos_a_probar = ['gemini-3.5-flash', 'gemini-2.5-flash']
+            modelos_a_probar = ['gemini-3.6-flash', 'gemini-3.5-flash']
             indice_modelo = 0
             
             intentos_maximos = 4
@@ -198,19 +198,16 @@ if st.button("Evaluar Trabajo", type="primary"):
                     
                 except Exception as error_ia:
                     if "503" in str(error_ia) or "429" in str(error_ia):
-                        # Si falla el 3.6, pasamos al 1.5
                         if indice_modelo == 0:
                             indice_modelo = 1
-                            st.warning(f"Modelo principal saturado. Cambiando automáticamente al modelo de respaldo (gemini-1.5-flash)...")
+                            # El mensaje ahora se adapta al modelo que toca
+                            st.warning(f"Modelo principal saturado. Cambiando automáticamente al modelo de respaldo ({modelos_a_probar[1]})...")
                             time.sleep(2)
-                        # Si el 1.5 también falla y nos quedan intentos, esperamos
                         elif intento < (intentos_maximos - 1):
                             st.warning(f"Todos los modelos saturados. Reintentando en 15 segundos... (Intento {intento + 1} de {intentos_maximos})")
                             time.sleep(15)
                         else:
                             raise error_ia 
-                    else:
-                        raise error_ia 
             
         except Exception as e:
             st.error(f"Hubo un error al procesar los archivos: {e}")
