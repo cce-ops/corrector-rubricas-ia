@@ -103,23 +103,24 @@ if st.button("Evaluar Trabajo", type="primary"):
                 texto_alumno_final += extraer_texto_archivo(archivo)
                 texto_alumno_final += f"\n--- FIN DEL ARCHIVO: {archivo.name} ---\n"
             
+            # --- NUEVO PROMPT SEPARANDO CÁLCULO DE REDACCIÓN ---
             instruccion_tono = ""
             if "Constructivo" in tono_evaluacion:
-                instruccion_tono = "Ofrece un feedback constructivo, explicando al alumno cómo puede mejorar en los puntos donde ha fallado."
+                instruccion_tono = "Tono de la justificación: Constructivo (explica cómo mejorar los fallos detectados)."
             elif "Estricto" in tono_evaluacion:
-                instruccion_tono = "Sé muy estricto y directo. Señala únicamente los errores técnicos y lo que falta, sin lenguaje suavizado."
+                instruccion_tono = "Tono de la justificación: Estricto (señala los errores de forma muy directa y cruda)."
             else:
-                instruccion_tono = "Sé extremadamente breve. Da la nota y una sola frase de justificación por criterio, sin rodeos."
+                instruccion_tono = "Tono de la justificación: Breve (máximo una línea por criterio, muy resumido)."
 
             client = genai.Client(api_key=api_key)
             
             instrucciones = f"""
-            Eres un profesor de ingeniería. Tu tarea es evaluar el trabajo de un alumno compuesto por varios archivos.
+            Eres un profesor de ingeniería evaluando un proyecto.
             
-            REGLAS OBLIGATORIAS:
-            - Debes usar EXCLUSIVAMENTE la rúbrica proporcionada.
-            - Evalúa TODOS los criterios. Si no hay mención a un criterio en los archivos, la nota es 0.
-            - {instruccion_tono}
+            FASE 1: CÁLCULO ESTRICTO DE LA NOTA (REGLAS INMUTABLES)
+            - Usa EXCLUSIVAMENTE la rúbrica proporcionada.
+            - Evalúa TODOS Y CADA UNO de los criterios.
+            - Sé extremadamente riguroso. Busca exhaustivamente cualquier fallo técnico o requisito omitido. Si falta algo, penaliza la nota.
             
             RÚBRICA:
             {texto_rubrica_final}
@@ -127,17 +128,21 @@ if st.button("Evaluar Trabajo", type="primary"):
             TRABAJO DEL ALUMNO:
             {texto_alumno_final}
             
+            FASE 2: REDACCIÓN DEL INFORME
+            Aplica este estilo estrictamente a tus justificaciones:
+            {instruccion_tono}
+            
             ESTRUCTURA DE TU RESPUESTA:
-            1. NOTA FINAL CALCULADA: (Suma de puntos obtenidos / Suma de puntos máximos posibles).
+            1. NOTA FINAL CALCULADA: (Suma de puntos / Suma de puntos máximos).
             2. DESGLOSE POR CRITERIO: 
             - Nombre del Criterio: [Puntos asignados] / [Máximo posible]
-            - Justificación: Según el estilo solicitado.
+            - Justificación: [Aplicando el tono elegido en la Fase 2]
             """
             
             intentos_maximos = 3
             for intento in range(intentos_maximos):
                 try:
-                    # NUEVO: Añadido config con temperature=0.2 para que las notas sean súper matemáticas y objetivas
+                    # Config con temperature=0.2 para que las notas sean súper matemáticas y objetivas
                     response = client.models.generate_content(
                         model='gemini-3.6-flash',
                         contents=instrucciones,
