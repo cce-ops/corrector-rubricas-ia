@@ -2,8 +2,9 @@ import streamlit as st
 from google import genai
 import pypdf
 import time
-from pptx import Presentation  # Para leer PowerPoints
-import docx  # Para leer Words
+from pptx import Presentation
+import docx
+import openpyxl # ¡Nueva librería para leer Excel!
 
 st.title("Corrector Automático por Rúbricas")
 st.write("Herramienta de apoyo para la evaluación de proyectos de ingeniería.")
@@ -11,7 +12,7 @@ st.write("Herramienta de apoyo para la evaluación de proyectos de ingeniería."
 # Caja para la contraseña de la IA
 api_key = st.text_input("Introduce tu API Key de Gemini:", type="password")
 
-# SÚPER FUNCIÓN: Lee PDF, PPTX y DOCX
+# SÚPER FUNCIÓN: Lee PDF, PPTX, DOCX y ahora XLSX (Excel)
 def extraer_texto_archivo(archivo):
     texto = ""
     nombre = archivo.name.lower()
@@ -33,6 +34,17 @@ def extraer_texto_archivo(archivo):
             documento = docx.Document(archivo)
             for parrafo in documento.paragraphs:
                 texto += parrafo.text + "\n"
+                
+        elif nombre.endswith('.xlsx'):
+            # Lógica para leer Excel
+            libro = openpyxl.load_workbook(archivo, data_only=True)
+            for hoja in libro.worksheets:
+                for fila in hoja.iter_rows(values_only=True):
+                    # Filtramos las celdas vacías y unimos los textos con un separador
+                    fila_texto = [str(celda) for celda in fila if celda is not None]
+                    if fila_texto:
+                        texto += " | ".join(fila_texto) + "\n"
+                        
     except Exception as e:
         texto += f"[Error al extraer texto de este archivo: {e}]\n"
         
@@ -42,7 +54,8 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("1. Rúbrica")
-    opcion_rubrica = st.radio("¿Cómo vas a introducir la rúbrica?", ["Pegar texto", "Subir PDF"])
+    # Cambiamos la opción para que sea un archivo genérico
+    opcion_rubrica = st.radio("¿Cómo vas a introducir la rúbrica?", ["Pegar texto", "Subir Archivo (PDF, Word, Excel)"])
     
     rubrica_texto = ""
     archivo_rubrica = None
@@ -50,16 +63,19 @@ with col1:
     if opcion_rubrica == "Pegar texto":
         rubrica_texto = st.text_area("Pega aquí los criterios:", height=200)
     else:
-        # La rúbrica suele ser un solo PDF
-        archivo_rubrica = st.file_uploader("Sube la rúbrica en PDF", type=["pdf"], key="rubrica_pdf")
+        # AHORA LA RÚBRICA ACEPTA PDF, DOCX Y XLSX
+        archivo_rubrica = st.file_uploader(
+            "Sube la rúbrica de evaluación", 
+            type=["pdf", "docx", "xlsx"], 
+            key="rubrica_file"
+        )
 
 with col2:
     st.subheader("2. Trabajo del Alumno")
-    # AHORA ACEPTA MULTIPLES ARCHIVOS Y FORMATOS
     archivos_alumno = st.file_uploader(
         "Sube los archivos (PDF, Word, PowerPoint)", 
         type=["pdf", "docx", "pptx"], 
-        accept_multiple_files=True, # <--- LA MAGIA ESTÁ AQUÍ
+        accept_multiple_files=True,
         key="alumno_archivos"
     )
 
@@ -68,21 +84,21 @@ if st.button("Evaluar Trabajo", type="primary"):
         st.error("Por favor, introduce tu API Key arriba para conectar con la IA.")
     elif opcion_rubrica == "Pegar texto" and not rubrica_texto:
         st.warning("Por favor, pega el texto de la rúbrica.")
-    elif opcion_rubrica == "Subir PDF" and not archivo_rubrica:
-        st.warning("Por favor, sube el archivo PDF de la rúbrica.")
-    elif not archivos_alumno: # Si la lista está vacía
+    elif opcion_rubrica != "Pegar texto" and not archivo_rubrica:
+        st.warning("Por favor, sube el archivo de la rúbrica.")
+    elif not archivos_alumno:
         st.warning("Por favor, sube al menos un archivo del alumno.")
     else:
         st.info("Procesando archivos y analizando... (esto puede tardar unos segundos)")
         
         try:
-            # Extraemos rúbrica
-            if opcion_rubrica == "Subir PDF":
-                texto_rubrica_final = extraer_texto_archivo(archivo_rubrica)
-            else:
+            # 1. Extraemos la rúbrica (usando la función mejorada)
+            if opcion_rubrica == "Pegar texto":
                 texto_rubrica_final = rubrica_texto
+            else:
+                texto_rubrica_final = extraer_texto_archivo(archivo_rubrica)
                 
-            # UNIMOS EL TEXTO DE TODOS LOS ARCHIVOS DEL ALUMNO
+            # 2. Unimos el texto de todos los archivos del alumno
             texto_alumno_final = ""
             for archivo in archivos_alumno:
                 texto_alumno_final += f"\n\n--- INICIO DEL ARCHIVO: {archivo.name} ---\n"
@@ -131,4 +147,4 @@ if st.button("Evaluar Trabajo", type="primary"):
                         raise error_ia 
             
         except Exception as e:
-            st.error(f"Hubo un error al procesar el archivo o conectar con la IA: {e}")
+            st.error(f"Hubo un error al procesar los archivos o conectar con la IA: {e}")
