@@ -44,7 +44,7 @@ estilos_upc = """
 st.markdown(estilos_upc, unsafe_allow_html=True)
 st.title("Corrector Automático por Rúbricas")
 st.write("Herramienta de apoyo para la evaluación de proyectos de ingeniería.")
-st.caption("🔒 Aviso de Privacidad: Los documentos subidos son procesados en memoria temporal y se eliminan al finalizar la evaluación. Se recomienda a los alumnos omitir datos personales sensibles.")
+st.caption("🔒 Aviso de Privacidad y Limitaciones: Los documentos subidos son procesados en memoria temporal y se eliminan al finalizar la evaluación. Se recomienda a los alumnos omitir datos personales sensibles. El sistema lee texto plano, no compila código fuente y podría omitir datos en anexos masivos. La calificación es una propuesta automática que requiere validación docente.")
 
 api_key = st.text_input("Introduce tu API Key de Gemini:", type="password")
 
