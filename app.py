@@ -174,12 +174,16 @@ if st.button("Evaluar Trabajo", type="primary"):
             - Justificación: [Aplicando el tono elegido en la Fase 2]
             """
             
-            intentos_maximos = 5
+# --- NUEVO: Sistema de Respaldo Automático (Fallback) ---
+            modelos_a_probar = ['gemini-3.6-flash', 'gemini-1.5-flash']
+            indice_modelo = 0
+            
+            intentos_maximos = 4
             for intento in range(intentos_maximos):
+                modelo_actual = modelos_a_probar[indice_modelo]
                 try:
-                    # Config con temperature=0.2 para que las notas sean súper matemáticas y objetivas
                     response = client.models.generate_content(
-                        model='gemini-3.6-flash',
+                        model=modelo_actual,
                         contents=instrucciones,
                         config={'temperature': 0.2}
                     )
@@ -188,9 +192,18 @@ if st.button("Evaluar Trabajo", type="primary"):
                     break 
                     
                 except Exception as error_ia:
-                    if ("503" in str(error_ia) or "429" in str(error_ia)) and intento < (intentos_maximos - 1):
-                        st.warning(f"Reintentando en 5 segundos... (Intento {intento + 1} de {intentos_maximos})")
-                        time.sleep(15)
+                    if "503" in str(error_ia) or "429" in str(error_ia):
+                        # Si falla el 3.6, pasamos al 1.5
+                        if indice_modelo == 0:
+                            indice_modelo = 1
+                            st.warning(f"Modelo principal saturado. Cambiando automáticamente al modelo de respaldo (gemini-1.5-flash)...")
+                            time.sleep(2)
+                        # Si el 1.5 también falla y nos quedan intentos, esperamos
+                        elif intento < (intentos_maximos - 1):
+                            st.warning(f"Todos los modelos saturados. Reintentando en 15 segundos... (Intento {intento + 1} de {intentos_maximos})")
+                            time.sleep(15)
+                        else:
+                            raise error_ia 
                     else:
                         raise error_ia 
             
