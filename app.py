@@ -180,7 +180,7 @@ if st.button("Evaluar Trabajo", type="primary"):
             """
             
 # --- NUEVO: Sistema de Respaldo Automático (Fallback) ---
-            modelos_a_probar = ['gemini-3.6-flash', 'gemini-1.5-flash']
+            modelos_a_probar = ['gemini-3.5-flash', 'gemini-2.5-flash']
             indice_modelo = 0
             
             intentos_maximos = 4
