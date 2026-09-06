@@ -4,15 +4,16 @@ import pypdf
 import time
 from pptx import Presentation
 import docx
-import openpyxl # ¡Nueva librería para leer Excel!
+import openpyxl 
 
 st.title("Corrector Automático por Rúbricas")
 st.write("Herramienta de apoyo para la evaluación de proyectos de ingeniería.")
+st.caption("🔒 Aviso de Privacidad: Los documentos subidos son procesados en memoria temporal y se eliminan al finalizar la evaluación. Se recomienda a los alumnos omitir datos personales sensibles.")
 
 # Caja para la contraseña de la IA
 api_key = st.text_input("Introduce tu API Key de Gemini:", type="password")
 
-# SÚPER FUNCIÓN: Lee PDF, PPTX, DOCX y ahora XLSX (Excel)
+# SÚPER FUNCIÓN: Lee PDF, PPTX, DOCX, XLSX y Código puro (.py, .m)
 def extraer_texto_archivo(archivo):
     texto = ""
     nombre = archivo.name.lower()
@@ -36,15 +37,17 @@ def extraer_texto_archivo(archivo):
                 texto += parrafo.text + "\n"
                 
         elif nombre.endswith('.xlsx'):
-            # Lógica para leer Excel
             libro = openpyxl.load_workbook(archivo, data_only=True)
             for hoja in libro.worksheets:
                 for fila in hoja.iter_rows(values_only=True):
-                    # Filtramos las celdas vacías y unimos los textos con un separador
                     fila_texto = [str(celda) for celda in fila if celda is not None]
                     if fila_texto:
                         texto += " | ".join(fila_texto) + "\n"
                         
+        elif nombre.endswith('.m') or nombre.endswith('.py'):
+            # Los archivos de código son texto plano, los leemos directamente
+            texto += archivo.getvalue().decode("utf-8") + "\n"
+            
     except Exception as e:
         texto += f"[Error al extraer texto de este archivo: {e}]\n"
         
@@ -54,7 +57,6 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("1. Rúbrica")
-    # Cambiamos la opción para que sea un archivo genérico
     opcion_rubrica = st.radio("¿Cómo vas a introducir la rúbrica?", ["Pegar texto", "Subir Archivo (PDF, Word, Excel)"])
     
     rubrica_texto = ""
@@ -63,7 +65,6 @@ with col1:
     if opcion_rubrica == "Pegar texto":
         rubrica_texto = st.text_area("Pega aquí los criterios:", height=200)
     else:
-        # AHORA LA RÚBRICA ACEPTA PDF, DOCX Y XLSX
         archivo_rubrica = st.file_uploader(
             "Sube la rúbrica de evaluación", 
             type=["pdf", "docx", "xlsx"], 
@@ -72,9 +73,10 @@ with col1:
 
 with col2:
     st.subheader("2. Trabajo del Alumno")
+    # AHORA ACEPTA TAMBIÉN EXCEL, PYTHON Y MATLAB
     archivos_alumno = st.file_uploader(
-        "Sube los archivos (PDF, Word, PowerPoint)", 
-        type=["pdf", "docx", "pptx"], 
+        "Sube los archivos (PDF, Word, PPT, Excel, MATLAB .m, Python .py)", 
+        type=["pdf", "docx", "pptx", "xlsx", "m", "py"], 
         accept_multiple_files=True,
         key="alumno_archivos"
     )
@@ -92,13 +94,11 @@ if st.button("Evaluar Trabajo", type="primary"):
         st.info("Procesando archivos y analizando... (esto puede tardar unos segundos)")
         
         try:
-            # 1. Extraemos la rúbrica (usando la función mejorada)
             if opcion_rubrica == "Pegar texto":
                 texto_rubrica_final = rubrica_texto
             else:
                 texto_rubrica_final = extraer_texto_archivo(archivo_rubrica)
                 
-            # 2. Unimos el texto de todos los archivos del alumno
             texto_alumno_final = ""
             for archivo in archivos_alumno:
                 texto_alumno_final += f"\n\n--- INICIO DEL ARCHIVO: {archivo.name} ---\n"
@@ -108,7 +108,7 @@ if st.button("Evaluar Trabajo", type="primary"):
             client = genai.Client(api_key=api_key)
             
             instrucciones = f"""
-            Eres un profesor de ingeniería muy estricto. Tu tarea es evaluar el trabajo de un alumno que puede estar compuesto por varios archivos.
+            Eres un profesor de ingeniería muy estricto. Tu tarea es evaluar el trabajo de un alumno que puede estar compuesto por varios archivos (memorias, presentaciones, código, etc.).
             
             REGLAS OBLIGATORIAS:
             - Debes usar EXCLUSIVAMENTE la rúbrica proporcionada.
@@ -125,7 +125,7 @@ if st.button("Evaluar Trabajo", type="primary"):
             1. NOTA FINAL CALCULADA: (Suma de puntos obtenidos / Suma de puntos máximos posibles de la rúbrica).
             2. DESGLOSE POR CRITERIO (Obligatorio evaluar cada uno): 
             - Nombre del Criterio: [Puntos asignados] / [Máximo posible]
-            - Justificación DETALLADA: Cita qué ha hecho bien el alumno y qué elementos técnicos le han faltado explícitamente según la rúbrica.
+            - Justificación DETALLADA: Cita qué ha hecho bien el alumno y qué elementos técnicos (incluyendo aspectos de su código fuente si aplica) le han faltado explícitamente según la rúbrica.
             """
             
             intentos_maximos = 3
