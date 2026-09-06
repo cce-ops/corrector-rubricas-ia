@@ -5,15 +5,14 @@ import time
 from pptx import Presentation
 import docx
 import openpyxl 
+import io  # NUEVO: Para crear archivos en la memoria de la web
 
 st.title("Corrector Automático por Rúbricas")
 st.write("Herramienta de apoyo para la evaluación de proyectos de ingeniería.")
 st.caption("🔒 Aviso de Privacidad: Los documentos subidos son procesados en memoria temporal y se eliminan al finalizar la evaluación. Se recomienda a los alumnos omitir datos personales sensibles.")
 
-# Caja para la contraseña de la IA
 api_key = st.text_input("Introduce tu API Key de Gemini:", type="password")
 
-# --- NUEVO: Selector de Tono de Evaluación ---
 tono_evaluacion = st.selectbox(
     "¿Qué estilo de feedback quieres que genere la IA?",
     [
@@ -77,7 +76,6 @@ with col2:
         key="alumno_archivos"
     )
 
-# --- NUEVO: Memoria para guardar el resultado y poder descargarlo ---
 if "resultado_evaluacion" not in st.session_state:
     st.session_state.resultado_evaluacion = None
 
@@ -105,7 +103,6 @@ if st.button("Evaluar Trabajo", type="primary"):
                 texto_alumno_final += extraer_texto_archivo(archivo)
                 texto_alumno_final += f"\n--- FIN DEL ARCHIVO: {archivo.name} ---\n"
             
-            # --- NUEVO: Adaptamos el prompt según el tono elegido ---
             instruccion_tono = ""
             if "Constructivo" in tono_evaluacion:
                 instruccion_tono = "Ofrece un feedback constructivo, explicando al alumno cómo puede mejorar en los puntos donde ha fallado."
@@ -140,12 +137,13 @@ if st.button("Evaluar Trabajo", type="primary"):
             intentos_maximos = 3
             for intento in range(intentos_maximos):
                 try:
+                    # NUEVO: Añadido config con temperature=0.2 para que las notas sean súper matemáticas y objetivas
                     response = client.models.generate_content(
                         model='gemini-3.6-flash',
-                        contents=instrucciones
+                        contents=instrucciones,
+                        config={'temperature': 0.2}
                     )
                     
-                    # Guardamos el resultado en la memoria de la sesión
                     st.session_state.resultado_evaluacion = response.text
                     break 
                     
@@ -159,16 +157,26 @@ if st.button("Evaluar Trabajo", type="primary"):
         except Exception as e:
             st.error(f"Hubo un error al procesar los archivos: {e}")
 
-# --- NUEVO: Mostrar resultado y botón de descarga si hay datos en la memoria ---
+# --- SECCIÓN DE DESCARGA EN WORD ---
 if st.session_state.resultado_evaluacion:
     st.success("¡Evaluación completada!")
     st.write(st.session_state.resultado_evaluacion)
     
-    # Botón mágico para descargar
+    # 1. Creamos un documento Word en blanco en la memoria
+    doc = docx.Document()
+    doc.add_heading('Informe de Evaluación Automatizada', 0)
+    doc.add_paragraph(st.session_state.resultado_evaluacion)
+    
+    # 2. Lo guardamos en un "archivo virtual" (buffer)
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0) # Volvemos al principio del archivo para poder leerlo
+    
+    # 3. Botón de descarga apuntando al archivo Word
     st.download_button(
-        label="📥 Descargar Informe de Evaluación (.txt)",
-        data=st.session_state.resultado_evaluacion,
-        file_name="evaluacion_alumno.txt",
-        mime="text/plain",
+        label="📥 Descargar Informe en Word (.docx)",
+        data=buffer,
+        file_name="evaluacion_alumno.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         type="primary"
     )
