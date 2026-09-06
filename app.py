@@ -8,7 +8,6 @@ import openpyxl
 import io  # NUEVO: Para crear archivos en la memoria de la web
 st.set_page_config(
     page_title="Corrector EEBE", 
-    page_icon="🎓", 
     layout="wide"
 )
 st.title("Corrector Automático por Rúbricas")
