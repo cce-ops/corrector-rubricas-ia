@@ -1,6 +1,7 @@
 import streamlit as st
 from google import genai
 import pypdf
+import time  # Importamos 'time' para los reintentos automáticos
 
 st.title("Corrector Automático por Rúbricas")
 st.write("Herramienta de apoyo para la evaluación de proyectos de ingeniería.")
@@ -20,7 +21,6 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("1. Rúbrica")
-    # Dejamos que el usuario elija cómo subir la rúbrica
     opcion_rubrica = st.radio("¿Cómo vas a introducir la rúbrica?", ["Pegar texto", "Subir PDF"])
     
     rubrica_texto = ""
@@ -49,7 +49,7 @@ if st.button("Evaluar Trabajo", type="primary"):
         st.info("Procesando archivos y analizando... (esto puede tardar unos segundos)")
         
         try:
-            # 2. Extraemos el texto de la rúbrica (si es un PDF)
+            # 2. Extraemos el texto de la rúbrica
             if opcion_rubrica == "Subir PDF":
                 texto_rubrica_final = extraer_texto_pdf(archivo_rubrica)
             else:
@@ -82,13 +82,29 @@ if st.button("Evaluar Trabajo", type="primary"):
             - Justificación DETALLADA: Cita qué ha hecho bien el alumno y qué elementos técnicos le han faltado explícitamente según la rúbrica.
             """
             
-            response = client.models.generate_content(
-                model='gemini-3.6-flash',
-                contents=instrucciones
-            )
+            # 5. Envío de datos con SISTEMA DE REINTENTOS ANTISATURACIÓN
+            intentos_maximos = 3
             
-            st.success("¡Evaluación completada!")
-            st.write(response.text)
+            for intento in range(intentos_maximos):
+                try:
+                    response = client.models.generate_content(
+                        model='gemini-3.6-flash',
+                        contents=instrucciones
+                    )
+                    
+                    # Si la IA responde bien, mostramos el resultado y salimos del bucle
+                    st.success("¡Evaluación completada!")
+                    st.write(response.text)
+                    break 
+                    
+                except Exception as error_ia:
+                    # Comprobamos si es el error 503 y si nos quedan intentos
+                    if "503" in str(error_ia) and intento < (intentos_maximos - 1):
+                        st.warning(f"Servidores de Google muy ocupados. Reintentando en 5 segundos... (Intento {intento + 1} de {intentos_maximos})")
+                        time.sleep(5) # Espera 5 segundos antes de volver a preguntar
+                    else:
+                        # Si es otro error o se acabaron los intentos, lanzamos el error definitivo
+                        raise error_ia 
             
         except Exception as e:
             st.error(f"Hubo un error al procesar el archivo o conectar con la IA: {e}")
