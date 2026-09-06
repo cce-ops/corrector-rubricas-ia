@@ -5,23 +5,26 @@ import time
 from pptx import Presentation
 import docx
 import openpyxl 
-import io  # NUEVO: Para crear archivos en la memoria de la web
+import io 
+
+# 1. Configuración sin el page_icon
 st.set_page_config(
     page_title="Corrector EEBE", 
     layout="wide"
 )
-# --- NUEVO: Estilos adaptativos para los títulos ---
+
+# 2. Estilos para los títulos (Azul oscuro en claro, Azul celeste en oscuro)
 estilo_titulos = """
 <style>
-    /* 1. Color por defecto para los títulos (Modo Claro) */
+    /* Modo Claro: El mismo azul (#1363A2) de la casilla "Evaluar Trabajo" */
     h1, h2, h3 {
         color: #1363A2 !important;
     }
 
-    /* 2. Color alternativo si se activa el Modo Oscuro */
+    /* Modo Oscuro: Azul claro brillante para que haga buen contraste */
     @media (prefers-color-scheme: dark) {
         h1, h2, h3 {
-            color: #63B3ED !important; /* Un azul celeste que resalta sobre negro */
+            color: #63B3ED !important;
         }
     }
 </style>
