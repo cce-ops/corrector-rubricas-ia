@@ -174,7 +174,7 @@ if st.button("Evaluar Trabajo", type="primary"):
             - Justificación: [Aplicando el tono elegido en la Fase 2]
             """
             
-            intentos_maximos = 3
+            intentos_maximos = 5
             for intento in range(intentos_maximos):
                 try:
                     # Config con temperature=0.2 para que las notas sean súper matemáticas y objetivas
@@ -190,7 +190,7 @@ if st.button("Evaluar Trabajo", type="primary"):
                 except Exception as error_ia:
                     if ("503" in str(error_ia) or "429" in str(error_ia)) and intento < (intentos_maximos - 1):
                         st.warning(f"Reintentando en 5 segundos... (Intento {intento + 1} de {intentos_maximos})")
-                        time.sleep(35)
+                        time.sleep(15)
                     else:
                         raise error_ia 
             
