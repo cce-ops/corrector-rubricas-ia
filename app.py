@@ -6,7 +6,11 @@ from pptx import Presentation
 import docx
 import openpyxl 
 import io  # NUEVO: Para crear archivos en la memoria de la web
-
+st.set_page_config(
+    page_title="Corrector EEBE", 
+    page_icon="🎓", 
+    layout="wide"
+)
 st.title("Corrector Automático por Rúbricas")
 st.write("Herramienta de apoyo para la evaluación de proyectos de ingeniería.")
 st.caption("🔒 Aviso de Privacidad: Los documentos subidos son procesados en memoria temporal y se eliminan al finalizar la evaluación. Se recomienda a los alumnos omitir datos personales sensibles.")
