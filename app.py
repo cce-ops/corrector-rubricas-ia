@@ -8,8 +8,26 @@ import openpyxl
 import io  # NUEVO: Para crear archivos en la memoria de la web
 st.set_page_config(
     page_title="Corrector EEBE", 
+    page_icon="🎓", 
     layout="wide"
 )
+# --- NUEVO: Estilos adaptativos para los títulos ---
+estilo_titulos = """
+<style>
+    /* 1. Color por defecto para los títulos (Modo Claro) */
+    h1, h2, h3 {
+        color: #1363A2 !important;
+    }
+
+    /* 2. Color alternativo si se activa el Modo Oscuro */
+    @media (prefers-color-scheme: dark) {
+        h1, h2, h3 {
+            color: #63B3ED !important; /* Un azul celeste que resalta sobre negro */
+        }
+    }
+</style>
+"""
+st.markdown(estilo_titulos, unsafe_allow_html=True)
 st.title("Corrector Automático por Rúbricas")
 st.write("Herramienta de apoyo para la evaluación de proyectos de ingeniería.")
 st.caption("🔒 Aviso de Privacidad: Los documentos subidos son procesados en memoria temporal y se eliminan al finalizar la evaluación. Se recomienda a los alumnos omitir datos personales sensibles.")
