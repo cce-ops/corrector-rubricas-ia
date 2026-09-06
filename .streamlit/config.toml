@@ -1,0 +1,15 @@
+[theme]
+# Azul corporativo estilo UPC para los botones y barras de progreso
+primaryColor = "#1363A2"
+
+# Fondo de la página en blanco puro
+backgroundColor = "#FFFFFF"
+
+# Un gris muy sutil teñido de azul para las cajas donde se suben los archivos
+secondaryBackgroundColor = "#F0F4F8"
+
+# Gris oscuro casi negro para el texto, ideal para leer sin cansar la vista
+textColor = "#1E1E1E"
+
+# Tipo de letra limpio y moderno
+font = "sans serif"
