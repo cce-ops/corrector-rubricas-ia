@@ -153,9 +153,9 @@ if st.button("Evaluar Trabajo", type="primary"):
                     break 
                     
                 except Exception as error_ia:
-                    if "503" in str(error_ia) and intento < (intentos_maximos - 1):
+                    if ("503" in str(error_ia) or "429" in str(error_ia)) and intento < (intentos_maximos - 1):
                         st.warning(f"Reintentando en 5 segundos... (Intento {intento + 1} de {intentos_maximos})")
-                        time.sleep(5)
+                        time.sleep(35)
                     else:
                         raise error_ia 
             
