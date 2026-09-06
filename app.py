@@ -113,6 +113,8 @@ with col2:
 
 if "resultado_evaluacion" not in st.session_state:
     st.session_state.resultado_evaluacion = None
+if "nombre_proyecto" not in st.session_state:
+    st.session_state.nombre_proyecto = "Proyecto"
 
 if st.button("Evaluar Trabajo", type="primary"):
     if not api_key:
@@ -137,6 +139,9 @@ if st.button("Evaluar Trabajo", type="primary"):
                 texto_alumno_final += f"\n\n--- INICIO DEL ARCHIVO: {archivo.name} ---\n"
                 texto_alumno_final += extraer_texto_archivo(archivo)
                 texto_alumno_final += f"\n--- FIN DEL ARCHIVO: {archivo.name} ---\n"
+            
+            # --- NUEVO: Extraer el nombre del primer archivo sin la extensión ---
+            st.session_state.nombre_proyecto = archivos_alumno[0].name.rsplit('.', 1)[0]
             
             # --- NUEVO PROMPT SEPARANDO CÁLCULO DE REDACCIÓN ---
             instruccion_tono = ""
@@ -215,21 +220,21 @@ if st.session_state.resultado_evaluacion:
     st.success("¡Evaluación completada!")
     st.write(st.session_state.resultado_evaluacion)
     
-    # 1. Creamos un documento Word en blanco en la memoria
+    # 1. Creamos un documento Word y le ponemos el nombre del archivo como título
     doc = docx.Document()
-    doc.add_heading('Informe de Evaluación Automatizada', 0)
+    doc.add_heading(f'Informe de Evaluación: {st.session_state.nombre_proyecto}', 0)
     doc.add_paragraph(st.session_state.resultado_evaluacion)
     
-    # 2. Lo guardamos en un "archivo virtual" (buffer)
+    # 2. Lo guardamos en el buffer
     buffer = io.BytesIO()
     doc.save(buffer)
-    buffer.seek(0) # Volvemos al principio del archivo para poder leerlo
+    buffer.seek(0)
     
-    # 3. Botón de descarga apuntando al archivo Word
+    # 3. El botón ahora muestra el nombre del grupo y descarga el archivo personalizado
     st.download_button(
-        label="📥 Descargar Informe en Word (.docx)",
+        label=f"📥 Descargar Informe de {st.session_state.nombre_proyecto} (.docx)",
         data=buffer,
-        file_name="evaluacion_alumno.docx",
+        file_name=f"Evaluacion_{st.session_state.nombre_proyecto}.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         type="primary"
     )
