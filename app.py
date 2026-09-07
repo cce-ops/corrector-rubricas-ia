@@ -49,11 +49,12 @@ st.caption("🔒 Aviso de Privacidad y Limitaciones: Los documentos subidos son 
 # --- SELECCIÓN DE PROVEEDOR Y MODELO ---
 proveedor = st.selectbox(
     "Selecciona el proveedor de Inteligencia Artificial:", 
-    ["Google", "OpenAI (ChatGPT)", "Anthropic (Claude)", "DeepSeek"]
+    ["Google", "OpenAI (ChatGPT)", "Anthropic (Claude)", "DeepSeek", "Local (Ollama / LM Studio)"]
 )
 
 if proveedor == "Google":
-    modelo_elegido = st.selectbox("Modelo:", ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.1-pro-preview"])
+    # Actualizado al modelo 2.5-pro estable
+    modelo_elegido = st.selectbox("Modelo:", ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-pro"])
     api_key = st.text_input("Introduce tu Google API Key:", type="password")
 elif proveedor == "OpenAI (ChatGPT)":
     modelo_elegido = st.selectbox("Modelo:", ["gpt-4o", "gpt-4o-mini"])
@@ -64,15 +65,10 @@ elif proveedor == "Anthropic (Claude)":
 elif proveedor == "DeepSeek":
     modelo_elegido = st.selectbox("Modelo:", ["deepseek-chat", "deepseek-reasoner"])
     api_key = st.text_input("Introduce tu DeepSeek API Key:", type="password")
-
-tono_evaluacion = st.selectbox(
-    "¿Qué estilo de feedback quieres que genere la IA?",
-    [
-        "Constructivo (Recomendado: Notas detalladas y consejos de mejora)",
-        "Estricto (Directo al grano, solo señala errores)",
-        "Breve (Solo la nota final y una línea resumen por criterio)"
-    ]
-)
+elif proveedor == "Local (Ollama / LM Studio)":
+    modelo_elegido = st.text_input("Nombre exacto del modelo descargado (ej. llama3.1, mistral):", value="llama3.1")
+    puerto = st.selectbox("Programa utilizado:", ["Ollama", "LM Studio"])
+    api_key = "clave-local-dummy" # No requiere clave real
 
 def extraer_texto_archivo(archivo):
     texto = ""
@@ -135,7 +131,7 @@ if "nombre_proyecto" not in st.session_state:
 
 if st.button("Evaluar Trabajo", type="primary"):
     if not api_key:
-        st.error("Por favor, introduce tu API Key arriba.")
+        st.error("Por favor, introduce la API Key (o verifica la selección en modo local).")
     elif opcion_rubrica == "Pegar texto" and not rubrica_texto:
         st.warning("Por favor, pega el texto de la rúbrica.")
     elif opcion_rubrica != "Pegar texto" and not archivo_rubrica:
@@ -160,15 +156,7 @@ if st.button("Evaluar Trabajo", type="primary"):
             # Extraer el nombre del primer archivo sin la extensión
             st.session_state.nombre_proyecto = archivos_alumno[0].name.rsplit('.', 1)[0]
             
-            # PROMPT SEPARANDO CÁLCULO DE REDACCIÓN
-            instruccion_tono = ""
-            if "Constructivo" in tono_evaluacion:
-                instruccion_tono = "Tono de la justificación: Constructivo (explica cómo mejorar los fallos detectados)."
-            elif "Estricto" in tono_evaluacion:
-                instruccion_tono = "Tono de la justificación: Estricto (señala los errores de forma muy directa y cruda)."
-            else:
-                instruccion_tono = "Tono de la justificación: Breve (máximo una línea por criterio, muy resumido)."
-            
+            # PROMPT UNIFICADO CON TONO CONSTRUCTIVO FIJO
             instrucciones = f"""
             Eres un profesor de ingeniería evaluando un proyecto.
             
@@ -185,13 +173,13 @@ if st.button("Evaluar Trabajo", type="primary"):
             
             FASE 2: REDACCIÓN DEL INFORME
             Aplica este estilo estrictamente a tus justificaciones:
-            {instruccion_tono}
+            Tono de la justificación: Constructivo (explica detalladamente cómo mejorar los fallos detectados).
             
             ESTRUCTURA DE TU RESPUESTA:
             1. NOTA FINAL CALCULADA: (Suma de puntos / Suma de puntos máximos).
             2. DESGLOSE POR CRITERIO: 
             - Nombre del Criterio: [Puntos asignados] / [Máximo posible]
-            - Justificación: [Aplicando el tono elegido en la Fase 2]
+            - Justificación: [Aplicando el tono constructivo indicado]
             """
             
             # ENRUTADOR DE APIs
@@ -234,6 +222,17 @@ if st.button("Evaluar Trabajo", type="primary"):
                     messages=[{"role": "user", "content": instrucciones}]
                 )
                 st.session_state.resultado_evaluacion = response.content[0].text
+
+            elif proveedor == "Local (Ollama / LM Studio)":
+                from openai import OpenAI
+                url_local = "http://localhost:11434/v1" if puerto == "Ollama" else "http://localhost:1234/v1"
+                client = OpenAI(api_key=api_key, base_url=url_local)
+                response = client.chat.completions.create(
+                    model=modelo_elegido,
+                    temperature=0.2,
+                    messages=[{"role": "user", "content": instrucciones}]
+                )
+                st.session_state.resultado_evaluacion = response.choices[0].message.content
                     
         except Exception as e:
             st.error(f"Hubo un error al procesar los archivos: {e}")
