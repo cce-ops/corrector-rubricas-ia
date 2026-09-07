@@ -7,7 +7,7 @@ import docx
 import openpyxl 
 import io 
 
-# 1. Configuración sin el page_icon
+# 1. Configuración de la página
 st.set_page_config(
     page_title="Corrector EEBE", 
     layout="wide"
@@ -53,7 +53,6 @@ proveedor = st.selectbox(
 )
 
 if proveedor == "Google":
-    # Actualizado al modelo 2.5-pro estable
     modelo_elegido = st.selectbox("Modelo:", ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-2.5-pro"])
     api_key = st.text_input("Introduce tu Google API Key:", type="password")
 elif proveedor == "OpenAI (ChatGPT)":
@@ -66,9 +65,21 @@ elif proveedor == "DeepSeek":
     modelo_elegido = st.selectbox("Modelo:", ["deepseek-chat", "deepseek-reasoner"])
     api_key = st.text_input("Introduce tu DeepSeek API Key:", type="password")
 elif proveedor == "Local (Ollama / LM Studio)":
-    modelo_elegido = st.text_input("Nombre exacto del modelo descargado (ej. llama3.1, mistral):", value="llama3.1")
     puerto = st.selectbox("Programa utilizado:", ["Ollama", "LM Studio"])
-    api_key = "clave-local-dummy" # No requiere clave real
+    modelo_elegido = st.text_input(
+        "Nombre exacto del modelo descargado:", 
+        value="llama3.1",
+        help="Debe coincidir con el 'tag' en Ollama (ej. llama3.1:8b) o el ID en LM Studio."
+    )
+    
+    st.info("""
+    **💡 Modelos recomendados para evaluar proyectos (Open Source):**
+    * **Equilibrio general (16GB RAM):** `llama3.1`, `mistral` o `gemma2`
+    * **Especializados en programación (MATLAB/Python):** `qwen2.5-coder` o `deepseek-coder`
+    * **PCs básicos (8GB RAM):** `llama3.2` (Versión 3B)
+    """)
+    
+    api_key = "clave-local-dummy" 
 
 def extraer_texto_archivo(archivo):
     texto = ""
@@ -156,7 +167,7 @@ if st.button("Evaluar Trabajo", type="primary"):
             # Extraer el nombre del primer archivo sin la extensión
             st.session_state.nombre_proyecto = archivos_alumno[0].name.rsplit('.', 1)[0]
             
-            # PROMPT UNIFICADO CON TONO CONSTRUCTIVO FIJO
+            # PROMPT CON TONO CONSTRUCTIVO FIJO
             instrucciones = f"""
             Eres un profesor de ingeniería evaluando un proyecto.
             
