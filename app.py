@@ -53,7 +53,7 @@ proveedor = st.selectbox(
 )
 
 if proveedor == "Google":
-    modelo_elegido = st.selectbox("Modelo:", ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.1-pro"])
+    modelo_elegido = st.selectbox("Modelo:", ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-pro"])
     api_key = st.text_input("Introduce tu Google API Key:", type="password")
 elif proveedor == "OpenAI (ChatGPT)":
     modelo_elegido = st.selectbox("Modelo:", ["gpt-4o", "gpt-4o-mini"])
