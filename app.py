@@ -46,7 +46,24 @@ st.title("Corrector Automático por Rúbricas")
 st.write("Herramienta de apoyo para la evaluación de proyectos de ingeniería.")
 st.caption("🔒 Aviso de Privacidad y Limitaciones: Los documentos subidos son procesados en memoria temporal y se eliminan al finalizar la evaluación. Se recomienda a los alumnos omitir datos personales sensibles. El sistema lee texto plano, no compila código fuente y podría omitir datos en anexos masivos. La calificación es una propuesta automática que requiere validación docente.")
 
-api_key = st.text_input("Introduce tu API Key de Gemini:", type="password")
+# --- NUEVO: Selección de Proveedor y Modelo ---
+proveedor = st.selectbox(
+    "Selecciona el proveedor de Inteligencia Artificial:", 
+    ["Google", "OpenAI (ChatGPT)", "Anthropic (Claude)", "DeepSeek"]
+)
+
+if proveedor == "Google":
+    modelo_elegido = st.selectbox("Modelo:", ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.1-pro"])
+    api_key = st.text_input("Introduce tu Google API Key:", type="password")
+elif proveedor == "OpenAI (ChatGPT)":
+    modelo_elegido = st.selectbox("Modelo:", ["gpt-4o", "gpt-4o-mini"])
+    api_key = st.text_input("Introduce tu OpenAI API Key:", type="password")
+elif proveedor == "Anthropic (Claude)":
+    modelo_elegido = st.selectbox("Modelo:", ["claude-3-5-sonnet", "claude-3-haiku"])
+    api_key = st.text_input("Introduce tu Anthropic API Key:", type="password")
+elif proveedor == "DeepSeek":
+    modelo_elegido = st.selectbox("Modelo:", ["deepseek-chat", "deepseek-reasoner"])
+    api_key = st.text_input("Introduce tu DeepSeek API Key:", type="password")
 
 tono_evaluacion = st.selectbox(
     "¿Qué estilo de feedback quieres que genere la IA?",
