@@ -4,3 +4,5 @@ pypdf
 python-pptx
 python-docx
 openpyxl
+openai
+anthropic
