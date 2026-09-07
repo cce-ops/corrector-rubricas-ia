@@ -46,7 +46,7 @@ st.title("Corrector Automático por Rúbricas")
 st.write("Herramienta de apoyo para la evaluación de proyectos de ingeniería.")
 st.caption("🔒 Aviso de Privacidad y Limitaciones: Los documentos subidos son procesados en memoria temporal y se eliminan al finalizar la evaluación. Se recomienda a los alumnos omitir datos personales sensibles. El sistema lee texto plano, no compila código fuente y podría omitir datos en anexos masivos. La calificación es una propuesta automática que requiere validación docente.")
 
-# --- NUEVO: Selección de Proveedor y Modelo ---
+# --- SELECCIÓN DE PROVEEDOR Y MODELO ---
 proveedor = st.selectbox(
     "Selecciona el proveedor de Inteligencia Artificial:", 
     ["Google", "OpenAI (ChatGPT)", "Anthropic (Claude)", "DeepSeek"]
@@ -143,7 +143,7 @@ if st.button("Evaluar Trabajo", type="primary"):
     elif not archivos_alumno:
         st.warning("Por favor, sube al menos un archivo del alumno.")
     else:
-        st.info("Procesando archivos y analizando... (esto puede tardar unos segundos)")
+        st.info(f"Procesando archivos y analizando con {proveedor}... (esto puede tardar unos segundos)")
         
         try:
             if opcion_rubrica == "Pegar texto":
@@ -157,10 +157,10 @@ if st.button("Evaluar Trabajo", type="primary"):
                 texto_alumno_final += extraer_texto_archivo(archivo)
                 texto_alumno_final += f"\n--- FIN DEL ARCHIVO: {archivo.name} ---\n"
             
-            # --- NUEVO: Extraer el nombre del primer archivo sin la extensión ---
+            # Extraer el nombre del primer archivo sin la extensión
             st.session_state.nombre_proyecto = archivos_alumno[0].name.rsplit('.', 1)[0]
             
-            # --- NUEVO PROMPT SEPARANDO CÁLCULO DE REDACCIÓN ---
+            # PROMPT SEPARANDO CÁLCULO DE REDACCIÓN
             instruccion_tono = ""
             if "Constructivo" in tono_evaluacion:
                 instruccion_tono = "Tono de la justificación: Constructivo (explica cómo mejorar los fallos detectados)."
@@ -168,8 +168,6 @@ if st.button("Evaluar Trabajo", type="primary"):
                 instruccion_tono = "Tono de la justificación: Estricto (señala los errores de forma muy directa y cruda)."
             else:
                 instruccion_tono = "Tono de la justificación: Breve (máximo una línea por criterio, muy resumido)."
-
-            client = genai.Client(api_key=api_key)
             
             instrucciones = f"""
             Eres un profesor de ingeniería evaluando un proyecto.
@@ -196,36 +194,47 @@ if st.button("Evaluar Trabajo", type="primary"):
             - Justificación: [Aplicando el tono elegido en la Fase 2]
             """
             
-# --- NUEVO: Sistema de Respaldo Automático (Fallback) ---
-            modelos_a_probar = ['gemini-3.6-flash', 'gemini-3.5-flash']
-            indice_modelo = 0
-            
-            intentos_maximos = 4
-            for intento in range(intentos_maximos):
-                modelo_actual = modelos_a_probar[indice_modelo]
-                try:
-                    response = client.models.generate_content(
-                        model=modelo_actual,
-                        contents=instrucciones,
-                        config={'temperature': 0.2}
-                    )
+            # ENRUTADOR DE APIs
+            if proveedor == "Google":
+                client = genai.Client(api_key=api_key)
+                response = client.models.generate_content(
+                    model=modelo_elegido,
+                    contents=instrucciones,
+                    config={'temperature': 0.2}
+                )
+                st.session_state.resultado_evaluacion = response.text
+
+            elif proveedor == "OpenAI (ChatGPT)":
+                from openai import OpenAI
+                client = OpenAI(api_key=api_key)
+                response = client.chat.completions.create(
+                    model=modelo_elegido,
+                    temperature=0.2,
+                    messages=[{"role": "user", "content": instrucciones}]
+                )
+                st.session_state.resultado_evaluacion = response.choices[0].message.content
+
+            elif proveedor == "DeepSeek":
+                from openai import OpenAI
+                client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
+                response = client.chat.completions.create(
+                    model=modelo_elegido,
+                    temperature=0.2,
+                    messages=[{"role": "user", "content": instrucciones}]
+                )
+                st.session_state.resultado_evaluacion = response.choices[0].message.content
+
+            elif proveedor == "Anthropic (Claude)":
+                from anthropic import Anthropic
+                client = Anthropic(api_key=api_key)
+                response = client.messages.create(
+                    model=modelo_elegido,
+                    max_tokens=4000,
+                    temperature=0.2,
+                    messages=[{"role": "user", "content": instrucciones}]
+                )
+                st.session_state.resultado_evaluacion = response.content[0].text
                     
-                    st.session_state.resultado_evaluacion = response.text
-                    break 
-                    
-                except Exception as error_ia:
-                    if "503" in str(error_ia) or "429" in str(error_ia):
-                        if indice_modelo == 0:
-                            indice_modelo = 1
-                            # El mensaje ahora se adapta al modelo que toca
-                            st.warning(f"Modelo principal saturado. Cambiando automáticamente al modelo de respaldo ({modelos_a_probar[1]})...")
-                            time.sleep(2)
-                        elif intento < (intentos_maximos - 1):
-                            st.warning(f"Todos los modelos saturados. Reintentando en 15 segundos... (Intento {intento + 1} de {intentos_maximos})")
-                            time.sleep(15)
-                        else:
-                            raise error_ia 
-            
         except Exception as e:
             st.error(f"Hubo un error al procesar los archivos: {e}")
 
@@ -234,17 +243,17 @@ if st.session_state.resultado_evaluacion:
     st.success("¡Evaluación completada!")
     st.write(st.session_state.resultado_evaluacion)
     
-    # 1. Creamos un documento Word y le ponemos el nombre del archivo como título
+    # Creamos un documento Word y le ponemos el nombre del archivo como título
     doc = docx.Document()
     doc.add_heading(f'Informe de Evaluación: {st.session_state.nombre_proyecto}', 0)
     doc.add_paragraph(st.session_state.resultado_evaluacion)
     
-    # 2. Lo guardamos en el buffer
+    # Lo guardamos en el buffer
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     
-    # 3. El botón ahora muestra el nombre del grupo y descarga el archivo personalizado
+    # El botón descarga el archivo personalizado
     st.download_button(
         label=f"📥 Descargar Informe de {st.session_state.nombre_proyecto} (.docx)",
         data=buffer,
