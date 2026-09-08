@@ -1,7 +1,7 @@
 @echo off
 echo Iniciando el Evaluador de Proyectos de la EEBE...
 echo Instalando y actualizando librerias necesarias (esto puede tardar unos segundos)...
-pip install -r requirements.txt -q
+python -m pip install -r requirements.txt -q
 echo Abriendo la aplicacion en el navegador...
-streamlit run app.py
+python -m streamlit run app.py
 pause
